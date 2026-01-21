@@ -1,116 +1,145 @@
-import React, { useEffect, useState } from "react"
-import { GetAllUsersCURD,AcceptRequestCURD,RejectRequestCURD } from "../CURD/UserCURD"
-import UserCard from "./Components/UserCard.jsx"
-import { useAuth } from "../Context/AuthContent.jsx"
+import React, { useEffect, useState } from "react";
+import {
+  GetAllUsersCURD,
+  AcceptRequestCURD,
+  RejectRequestCURD,
+} from "../CURD/UserCURD";
+import UserCard from "./Components/UserCard.jsx";
+import { useAuth } from "../Context/AuthContent.jsx";
 
 const ManageFriendShip = () => {
-  const { user , refreshUser} = useAuth()
+  const { user, refreshUser } = useAuth();
 
-  const [suggestions, setSuggestions] = useState([])
-  const [requests, setRequests] = useState([])
+  const [suggestions, setSuggestions] = useState([]);
+  const [requests, setRequests] = useState([]);
 
   useEffect(() => {
     const GetUsers = async () => {
-      const res = await GetAllUsersCURD()
-      if (!res?.success) return
+      const res = await GetAllUsersCURD();
+      if (!res?.success) return;
 
-      const sugg = []
-      const req = []
+      const sugg = [];
+      const req = [];
 
-      res.value.forEach(friend => {
+      res.value.forEach((friend) => {
         if (user.friendRequests.includes(friend._id)) {
-          req.push(friend)
+          req.push(friend);
         } else {
-          sugg.push(friend)
+          sugg.push(friend);
         }
-      })
+      });
 
-      setSuggestions(sugg)
-      setRequests(req)
-    }
+      setSuggestions(sugg);
+      setRequests(req);
+    };
 
     if (user?.friendRequests) {
-      GetUsers()
+      GetUsers();
     }
-  }, [user.friendRequests,user.friends,user.sentRequests])
-  const HandleAcceptRequest = async (friend)=>{
+  }, [user.friendRequests, user.friends, user.sentRequests]);
+
+  const HandleAcceptRequest = async (friend) => {
     try {
-        const details ={
-            friendId: friend._id
-        }
-        const response = await AcceptRequestCURD(details)
-        if (response.success){
-            await refreshUser()
-        }
-        else{
-            throw new Error("Error Occured while Accepting Request",response.err)
-        }
+      const response = await AcceptRequestCURD({
+        friendId: friend._id,
+      });
+      if (response.success) {
+        await refreshUser();
+      }
     } catch (error) {
-        console.log("Error Occured in the HandleAccpetRequest",error)
+      console.error("Accept request error:", error);
     }
-  }
-  const HandleDeleteRequest = async (friend)=>{
+  };
+
+  const HandleDeleteRequest = async (friend) => {
     try {
-        const details ={
-            friendId: friend._id
-        }
-        const response = await RejectRequestCURD(details)
-        if (response.success){
-            await refreshUser()
-        }
-        else{
-            throw new Error("Error Occured while Rejecting Request",response.err)
-        }
+      const response = await RejectRequestCURD({
+        friendId: friend._id,
+      });
+      if (response.success) {
+        await refreshUser();
+      }
     } catch (error) {
-        console.log("Error Occured in the HandleDeleteRequest",error)
+      console.error("Reject request error:", error);
     }
-  }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 grid grid-cols-2 gap-6">
-
-      {/* LEFT – SUGGESTIONS */}
+    <div className="max-w-6xl mx-auto p-6 space-y-8 font-body">
+      {/* PAGE HEADER */}
       <div>
-        <h2 className="text-xl font-bold mb-4">
-          People you may know
-        </h2>
-
-        {suggestions.length === 0 ? (
-          <p className="text-gray-500">No suggestions</p>
-        ) : (
-          suggestions.map(friend => (
-            <UserCard
-              key={friend._id}
-              friend={friend}
-              type="suggestion"
-            />
-          ))
-        )}
+        <h1 className="text-2xl font-heading-two text-gray-900 border-l-4 border-red-500 pl-3">
+          Manage Friendships
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Connect with people and manage incoming requests
+        </p>
       </div>
 
-      {/* RIGHT – REQUESTS */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">
-          Friend Requests
-        </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* SUGGESTIONS */}
+        <div className="bg-white rounded-xl shadow p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              People you may know
+            </h2>
+            <span className="text-sm font-semibold text-red-500">
+              {suggestions.length}
+            </span>
+          </div>
 
-        {requests.length === 0 ? (
-          <p className="text-gray-500">No requests</p>
-        ) : (
-          requests.map(friend => (
-            <UserCard
-              key={friend._id}
-              friend={friend}
-              type="request"
-              onAccept={HandleAcceptRequest}
-              onReject={HandleDeleteRequest}
-            />
-          ))
-        )}
+          {suggestions.length === 0 ? (
+            <EmptyState text="No new suggestions right now." />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {suggestions.map((friend) => (
+                <UserCard
+                  key={friend._id}
+                  friend={friend}
+                  type="suggestion"
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* REQUESTS */}
+        <div className="bg-white rounded-xl shadow p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Friend Requests
+            </h2>
+            <span className="text-sm font-semibold text-red-500">
+              {requests.length}
+            </span>
+          </div>
+
+          {requests.length === 0 ? (
+            <EmptyState text="You don’t have any requests." />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {requests.map((friend) => (
+                <UserCard
+                  key={friend._id}
+                  friend={friend}
+                  type="request"
+                  onAccept={HandleAcceptRequest}
+                  onReject={HandleDeleteRequest}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
     </div>
-  )
-}
+  );
+};
 
-export default ManageFriendShip
+/* ---------- EMPTY STATE ---------- */
+const EmptyState = ({ text }) => (
+  <div className="text-center py-8 text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg">
+    {text}
+  </div>
+);
+
+export default ManageFriendShip;

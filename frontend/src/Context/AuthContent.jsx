@@ -20,9 +20,6 @@ export const AuthProvider = ({ children }) => {
       if (res?.isLoggedIn) {
         setUser(res.user)
         setisLoggedIn(true)
-      } else {
-        setUser(null)
-        setisLoggedIn(false)
       }
     
       setLoading(false)

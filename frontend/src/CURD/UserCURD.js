@@ -219,12 +219,35 @@ export const GetFriendsCURD=async ()=>{
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Failed to update user details");
+      throw new Error(data.message || "Failed to get friends");
     }
 
     return data;
   } catch (error) {
     console.error("Error occurred in GetFriendsCURD:", error);
+    throw error;
+  }
+}
+
+
+export const GetRequestDetailsCURD = async() =>{
+  try {
+    const response = await fetch(`${BackendPath}/user/getrequser`,{
+      method:"GET",
+      credentials:"include",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to get requrest details");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error occurred in GetRequestDetailsCURD:", error);
     throw error;
   }
 }

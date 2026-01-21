@@ -443,3 +443,44 @@ export const GetFrndsController = async (req, res) => {
     });
   }
 };
+
+export const GetRequestDetailsController = async (req, res) => {
+  try {
+    const userId = req.session?.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await User.findById(userId)
+      .select("friendRequests")
+      .populate({
+        path: "friendRequests",
+        select: "_id name username email role avatar",
+      });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Friend request details fetched",
+      requests: user.friendRequests, // 👈 renamed (clearer)
+    });
+
+  } catch (error) {
+    console.error("GetRequestDetailsController error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

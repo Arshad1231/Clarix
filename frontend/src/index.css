@@ -1,2 +1,48 @@
-@import url('https://fonts.googleapis.com/css2?family=Aladin&family=Alfa+Slab+One&family=Jim+Nightshade&family=Kavoon&family=Merienda:wght@300..900&family=Patrick+Hand&family=Shadows+Into+Light&display=swap');
+/* 1️⃣ ALL imports FIRST */
+@import url('https://fonts.googleapis.com/css2?family=Bevan:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bevan:ital@0;1&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bevan:ital@0;1&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Savate:ital,wght@0,200..900;1,200..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bevan:ital@0;1&family=Boldonse&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Savate:ital,wght@0,200..900;1,200..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bevan:ital@0;1&family=Boldonse&family=Edu+SA+Hand:wght@400..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Savate:ital,wght@0,200..900;1,200..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bevan:ital@0;1&family=Boldonse&family=Edu+SA+Hand:wght@400..700&family=Junge&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Savate:ital,wght@0,200..900;1,200..900&display=swap');
+
 @import "tailwindcss";
+
+/* 2️⃣ Theme tokens AFTER imports */
+@theme {
+  --font-logo:"Bevan", serif;
+  --quotes-site : "Poppins", sans-serif;
+  --font-navbar :"Savate", sans-serif;
+  --font-title: "Boldonse", system-ui;
+  --font-cursive: "Edu SA Hand", cursive;
+  --font-head-two : "Junge", cursive;
+
+}
+
+/* 3️⃣ Utilities AFTER theme */
+@layer utilities {
+  .font-logo {
+    font-family: var(--font-logo);
+  }
+
+  .font-quote{
+    font-family: var(--quotes-site);
+  }
+
+  .font-navbar{
+    font-family: var(--font-navbar);
+  }
+
+  .font-heading{
+    font-family: var(--font-title);
+  }
+
+  .font-body{
+    font-family: var(--font-cursive);
+ 
+  }
+  .font-heading-two{
+    font-family: var(--font-head-two);
+ 
+  }
+}

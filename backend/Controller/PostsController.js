@@ -113,22 +113,25 @@ export const GetAskedQuestionsController = async (req, res) => {
     }
   }
 
-export const ScrollPostController = async(req,res)=>{
-  try {
-    const skip = req.query.skip || 0
-    const limit = 5
-    const posts = await Post.find()
-      .sort({ createdAt: -1 }) // newest first
-      .skip(skip)
-      .limit(limit)
-    res.json({
-      success: true,
-      posts
-    })
-  } catch (error) {
-    console.log("Error Occured in the Get DetailsController", error)
+  export const ScrollPostController = async (req, res) => {
+    try {
+      const skip = parseInt(req.query.skip, 10) || 0;
+      const limit = 8;
+  
+      const posts = await Post.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+  
+      res.json({
+        success: true,
+        posts,
+      });
+    } catch (error) {
+      console.log("Error Occurred in ScrollPostController", error);
       res.status(500).json({
-        message: error.message
-      })
-  }
-}
+        message: error.message,
+      });
+    }
+  };
+  

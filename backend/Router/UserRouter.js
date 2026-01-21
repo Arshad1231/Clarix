@@ -2,7 +2,7 @@ import express from "express"
 const UserRouter = express.Router()
 
 import {
-    userRegisterController,userLoginController,getMeController,userLogoutController,getUserDetailsController,getAllUsersController,sendRequestController,AcceptReqController,RejectRequestController,GetFrndsController
+    userRegisterController,userLoginController,getMeController,userLogoutController,getUserDetailsController,getAllUsersController,sendRequestController,AcceptReqController,RejectRequestController,GetFrndsController,GetRequestDetailsController
 } from "../Controller/UserController.js"
 
 import { upload } from "../config/multer.js";
@@ -20,6 +20,7 @@ UserRouter.post("/sendreq",sendRequestController)
 UserRouter.post("/accreq",AcceptReqController)
 UserRouter.post("/rejreq",RejectRequestController)
 UserRouter.get("/getfrnds",GetFrndsController)
+UserRouter.get("/getrequser",GetRequestDetailsController)
 
 
 export default UserRouter;
