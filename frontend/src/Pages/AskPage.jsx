@@ -10,6 +10,7 @@ export default function AskPost() {
     title: "",
     description: "",
     field: "",
+    tags:"",
     code: "",
     language: "",
     error: "",
@@ -26,7 +27,15 @@ export default function AskPost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await PostAskCURD(formData);
+
+    const payload ={
+      ...formData,
+      tags:formData.tags
+      .split(",")
+      .map(tag => tag.trim().toLowerCase())
+      .filter(tag => tag.length > 0),
+    };
+    const response = await PostAskCURD(payload);
     if (response?.success) {
       navigate("/content/home");
     }
@@ -71,6 +80,10 @@ export default function AskPost() {
               <li>
                 <span className="font-semibold text-red-500">Actual:</span>{" "}
                 What actually happened
+              </li>
+              <li>
+                <span className="font-semibold text-red-500">Tags:</span>{" "}
+                Relavent Languages or fields
               </li>
             </ul>
           </div>
@@ -212,6 +225,24 @@ export default function AskPost() {
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
             />
           </div>
+          {/* TAGS */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              name="tags"
+              placeholder="react, node, mongoose, socket.io"
+              value={formData.tags}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Add up to 5 relevant tags
+            </p>
+          </div>
+
 
           {/* SUBMIT */}
           <div className="flex justify-end">

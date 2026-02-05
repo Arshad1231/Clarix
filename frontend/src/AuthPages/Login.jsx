@@ -6,7 +6,7 @@ import { useAuth } from "../Context/AuthContent";
 
 export default function Login() {
   const Navigate = useNavigate();
-  const { setUser, setisLoggedIn , setLoading} = useAuth();
+  const { setUser, setisLoggedIn , setLoading,refreshUser} = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -30,6 +30,7 @@ export default function Login() {
         setUser(response.user);
         setisLoggedIn(true);
         setLoading(false)
+        refreshUser()
 
         Navigate("/content/home");
       }

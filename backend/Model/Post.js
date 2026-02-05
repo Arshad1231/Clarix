@@ -1,58 +1,126 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-const postSchema = mongoose.Schema({
-   
-    title:{
-        type:String,
-        required:true,
-        trim:true
+const postSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true
     },
-    description:{
-        type:String,
-        required:true,
 
+    description: {
+      type: String,
+      required: true
     },
-    field:{
-        type:String,
-        require:true,
+
+    field: {
+      type: String,
+      required: true,
+      index: true // helps filtering
     },
+
+    tags: [
+      {
+        type: String,
+        index: true
+      }
+    ],
+
     code: {
       type: String
     },
-    language:{
-      type:String
+
+    language: {
+      type: String
     },
-    error:{
-      type:String
+
+    error: {
+      type: String
     },
+
     expectedBehavior: {
-        type: String
+      type: String
     },
-  
+
     actualBehavior: {
       type: String
     },
-    answer:[
-      {
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Answer"
-      }
 
-    ],
-    comment:[
-      {
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Comment"
-      }
-    ],
     askedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
-    }
+      required: true,
+      index: true
     },
-    {
-      timestamps: true // adds createdAt & updatedAt
+
+    answers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Answer"
+      }
+    ],
+
+    comments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment"
+      }
+    ],
+
+    // 🚀 PERFORMANCE FIELDS
+    answerCount: {
+      type: Number,
+      default: 0
+    },
+
+    commentCount: {
+      type: Number,
+      default: 0
+    },
+
+    views: {
+      type: Number,
+      default: 0
+    },
+
+    // 👍 VOTING SYSTEM
+    upvotes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ],
+
+    downvotes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ],
+
+    // ✅ STATUS
+    status: {
+      type: String,
+      enum: ["open", "answered", "solved"],
+      default: "open"
+    },
+
+    // 🛑 MODERATION
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+
+    // 🔔 REAL-TIME / SOCKET SUPPORT
+    lastActivityAt: {
+      type: Date,
+      default: Date.now
     }
-)
+  },
+  {
+    timestamps: true
+  }
+);
+
 export default mongoose.model("Post", postSchema);

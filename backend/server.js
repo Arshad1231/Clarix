@@ -54,6 +54,10 @@ app.use(
 );
 
 const PORT = process.env.PORT || 5000;
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 //Routers 
 import UserRouter from "./Router/UserRouter.js";
@@ -84,11 +88,22 @@ io.on("connection", (socket) => {
   socket.on("sendMessage", (message) => {
     socket.to(message.chatId).emit("receiveMessage", message);
   });
+  // 🔥 POST ROOMS (NEW)
+  socket.on("joinPostRoom", (postId) => {
+    socket.join(`post:${postId}`);
+    console.log(`Joined post room: post:${postId}`);
+  });
+
+  socket.on("leavePostRoom", (postId) => {
+    socket.leave(`post:${postId}`);
+    console.log(`Left post room: post:${postId}`);
+  });
 
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
   });
 });
+
 
 
 mongoose

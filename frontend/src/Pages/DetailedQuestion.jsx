@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState,useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { GetQuestionDetailsCURD } from "../CURD/PostCURD"
+import { GetQuestionDetailsCURD, HandleVoteCURD } from "../CURD/PostCURD"
 import { AddCommentCURD } from "../CURD/CommentCURD"
 import { useAuth } from "../Context/AuthContent"
 import { AddAnswerCURD } from "../CURD/AnswerCURD"
+import socket from "../socket"
 
 const DetailedQuestion = () => {
+  const hasFetched = useRef(false)
   const navigate = useNavigate()
   const { id } = useParams()
   const { user } = useAuth()
@@ -34,11 +36,13 @@ const DetailedQuestion = () => {
 
   // Fetch question + comments (+ answers later)
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     const fetchQuestion = async () => {
       try {
         const res = await GetQuestionDetailsCURD(id)
         if (!res?.success) throw new Error(res?.message)
-
+          console.log(res.value._id)
         setQuestion(res.value)
         setComments(res.comments || [])
         setAnswers(res.answers || []) // backend-ready
@@ -50,7 +54,38 @@ const DetailedQuestion = () => {
     }
 
     fetchQuestion()
+    
   }, [id])
+  useEffect(() => {
+    socket.emit("joinPostRoom", id);
+  
+    const handleViewsUpdate = ({ postId, views }) => {
+      if (postId === id) {
+        setQuestion(prev => prev ? { ...prev, views } : prev);
+      }
+    };
+  
+    const handleVoteUpdate = ({ postId, upvotes, downvotes }) => {
+      if (postId === id) {
+        setQuestion(prev => ({
+          ...prev,
+          upvotes,
+          downvotes,
+        }));
+      }
+    };
+  
+    socket.on("viewsUpdated", handleViewsUpdate);
+    socket.on("voteUpdated", handleVoteUpdate);
+  
+    return () => {
+      socket.emit("leavePostRoom", id);
+      socket.off("viewsUpdated", handleViewsUpdate);
+      socket.off("voteUpdated", handleVoteUpdate);
+    };
+  }, [id]);
+  
+
 
   // Add Comment
   const handleAddComment = async () => {
@@ -123,71 +158,166 @@ const DetailedQuestion = () => {
     }
   }
   
-
+  const HandleVote = async (type) => {
+    try {
+      const res = await HandleVoteCURD(id, type);
+  
+      if (!res?.success) return;
+      
+      // 🔥 UPDATE YOUR OWN UI IMMEDIATELY
+    setQuestion(prev => ({
+      ...prev,
+      upvotes: res.upvotes,
+      downvotes: res.downvotes,
+    }));
+     
+  
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+  
   if (loading) return <p className="text-center mt-10">Loading...</p>
   if (error) return <p className="text-center mt-10 text-red-500">{error}</p>
 
+  const hasUpvoted =
+  question?.upvotes?.some(
+    (id) => id.toString() === user?.id
+  );
+
+  const hasDownvoted =
+    question?.downvotes?.some(
+      (id) => id.toString() === user?.id
+    );
+
+  
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-
+  
       {/* QUESTION CARD */}
-      <div className="bg-white rounded-xl shadow p-6 space-y-4">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="bg-white rounded-2xl shadow border border-red-100 p-6 space-y-5">
+  
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-gray-900 leading-snug">
           {question.title}
         </h1>
-
-        <div className="flex gap-4 text-sm text-gray-500">
-          <span>Field: {question.field}</span>
-          <span>ID: {question._id}</span>
+  
+        {/* Meta */}
+        <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+          <span className="px-2 py-1 bg-red-50 text-red-600 rounded-md">
+            {question.field}
+          </span>
+          <span>Views: <span className="font-medium">{question.views}</span></span>
+          <span>
+            Last active:{" "}
+            <span className="font-medium">
+              {new Date(question.lastActivityAt).toLocaleString()}
+            </span>
+          </span>
         </div>
-
+  
+        {/* Status */}
+        <span
+          className={`inline-block w-fit px-3 py-1 text-xs rounded-full font-semibold
+            ${question.status === "solved"
+              ? "bg-green-100 text-green-700"
+              : question.status === "answered"
+              ? "bg-yellow-100 text-yellow-700"
+              : "bg-red-100 text-red-700"}
+          `}
+        >
+          {question.status.toUpperCase()}
+        </span>
+  
+        {/* Description */}
         <p className="text-gray-800 leading-relaxed">
           {question.description}
         </p>
-
-        {question.code && (
-          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
-            <code>{question.code}</code>
-          </pre>
+  
+        {/* Tags */}
+        {question.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {question.tags.map(tag => (
+              <span
+                key={tag}
+                className="px-3 py-1 text-xs rounded-full bg-red-50 text-red-600 border border-red-100"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
         )}
+  
+        {/* Voting */}
+        <div className="flex items-center gap-6 pt-2">
+
+        {/* UPVOTE */}
+        <button
+          onClick={() => HandleVote("upvote")}
+          className={`flex items-center gap-1 text-sm transition
+            ${hasUpvoted
+              ? "text-red-600 font-semibold"
+              : "text-gray-600 hover:text-red-600"}
+          `}
+        >
+          👍 <span>{question.upvotes?.length || 0}</span>
+        </button>
+
+        {/* DOWNVOTE */}
+        <button
+          onClick={() => HandleVote("downvote")}
+          className={`flex items-center gap-1 text-sm transition
+            ${hasDownvoted
+              ? "text-red-600 font-semibold"
+              : "text-gray-600 hover:text-red-600"}
+          `}
+        >
+          👎 <span>{question.downvotes?.length || 0}</span>
+        </button>
+
+        </div>
+
+  
+        {/* Actions */}
         {String(question.askedBy) === String(user?.id) && (
           <button
             onClick={() => navigate(`/content/question/edit/${question._id}`)}
-            className="text-blue-600 text-sm"
+            className="text-sm text-red-600 hover:underline"
           >
-            Edit Question
+            ✏️ Edit Question
           </button>
         )}
       </div>
-
-      {/* COMMENTS | ANSWERS */}
-      <div className="bg-white rounded-xl shadow p-6">
-
+  
+      {/* COMMENTS / ANSWERS */}
+      <div className="bg-white rounded-2xl shadow border border-red-100 p-6">
+  
         {/* Tabs */}
-        <div className="flex border-b mb-4">
+        <div className="flex gap-6 border-b border-red-100 mb-6">
           <button
             onClick={() => setActiveTab("comments")}
-            className={`px-4 py-2 text-sm font-medium
+            className={`pb-2 text-sm font-semibold
               ${activeTab === "comments"
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-500 hover:text-gray-700"}
+                ? "border-b-2 border-red-500 text-red-600"
+                : "text-gray-500 hover:text-red-500"}
             `}
           >
             Comments ({comments.length})
           </button>
-
+  
           <button
             onClick={() => setActiveTab("answers")}
-            className={`px-4 py-2 text-sm font-medium
+            className={`pb-2 text-sm font-semibold
               ${activeTab === "answers"
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-500 hover:text-gray-700"}
+                ? "border-b-2 border-red-500 text-red-600"
+                : "text-gray-500 hover:text-red-500"}
             `}
           >
             Answers ({answers.length})
           </button>
         </div>
-
+  
         {/* Sliding Panels */}
         <div className="relative overflow-hidden">
           <div
@@ -195,139 +325,103 @@ const DetailedQuestion = () => {
               ${activeTab === "comments" ? "translate-x-0" : "-translate-x-full"}
             `}
           >
-
-            {/* COMMENTS PANEL */}
+  
+            {/* COMMENTS */}
             <div className="w-full flex-shrink-0 space-y-4">
-
+  
               <div className="flex justify-end">
                 <button
                   onClick={() => setShowCommentBox(prev => !prev)}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg"
+                  className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
                 >
                   {showCommentBox ? "Cancel" : "Add Comment"}
                 </button>
               </div>
-
+  
               {showCommentBox && (
                 <div className="space-y-3">
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Write your comment..."
-                    className="w-full min-h-[100px] border rounded-lg p-3"
+                    className="w-full min-h-[100px] border border-red-200 rounded-lg p-3 focus:ring-1 focus:ring-red-400"
                   />
-
+  
                   <button
                     onClick={handleAddComment}
                     disabled={postingComment}
-                    className="px-5 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
+                    className="px-5 py-2 bg-red-500 text-white rounded-lg disabled:opacity-50"
                   >
                     {postingComment ? "Posting..." : "Post Comment"}
                   </button>
                 </div>
               )}
-
+  
               {comments.length === 0 ? (
-                <p className="text-gray-500 text-sm">No comments yet.</p>
+                <p className="text-gray-500 text-sm">
+                  No comments yet.
+                </p>
               ) : (
                 <ul className="space-y-3">
-                  {comments
-                    .filter(c => c && c.content)
-                    .map(comment => (
-                      <li
-                        key={comment._id}
-                        className="border rounded-lg p-3 text-sm"
-                      >
-                        {comment.content}
-                      </li>
-                    ))}
+                  {comments.map(comment => (
+                    <li
+                      key={comment._id}
+                      className="border border-red-100 rounded-lg p-3 text-sm bg-red-50"
+                    >
+                      {comment.content}
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
-
-            {/* ANSWERS PANEL */}
+  
+            {/* ANSWERS */}
             <div className="w-full flex-shrink-0 space-y-4">
-
+  
               <div className="flex justify-end">
                 <button
                   onClick={() => setShowAnswerBox(prev => !prev)}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg"
+                  className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
                 >
                   {showAnswerBox ? "Cancel" : "Add Answer"}
                 </button>
               </div>
-
-              {showAnswerBox && (
-                <div className="space-y-3">
-                  <input
-                    value={answerTitle}
-                    onChange={(e) => setAnswerTitle(e.target.value)}
-                    placeholder="Answer title"
-                    className="w-full border rounded-lg p-3"
-                  />
-
-                  <textarea
-                    value={answerText}
-                    onChange={(e) => setAnswerText(e.target.value)}
-                    placeholder="Write your answer..."
-                    className="w-full min-h-[140px] border rounded-lg p-3"
-                  />
-
-                  <textarea
-                    value={answerCode}
-                    onChange={(e) => setAnswerCode(e.target.value)}
-                    placeholder="Optional code snippet"
-                    className="w-full min-h-[100px] font-mono bg-slate-900 text-slate-100 rounded-lg p-3"
-                  />
-
-                  <button
-                    onClick={handleAddAnswer}
-                    disabled={postingAnswer}
-                    className="px-5 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
-                  >
-                    {postingAnswer ? "Posting..." : "Post Answer"}
-                  </button>
-                </div>
-              )}
-
+  
               {answers.length === 0 ? (
                 <p className="text-gray-500 text-sm">
                   No answers yet. Be the first to answer.
                 </p>
               ) : (
                 <ul className="space-y-4">
-                  {answers
-                    .filter(a => a && a.content)
-                    .map(answer => (
-                      <li
-                        key={answer._id}
-                        className="border rounded-lg p-4 bg-gray-50"
-                      >
-                        <h4 className="font-semibold mb-2">
-                          {answer.title}
-                        </h4>
-
-                        <p className="text-sm mb-2">
-                          {answer.content}
-                        </p>
-
-                        {answer.code && (
-                          <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg text-sm overflow-x-auto">
-                            <code>{answer.code}</code>
-                          </pre>
-                        )}
-                      </li>
-                    ))}
+                  {answers.map(answer => (
+                    <li
+                      key={answer._id}
+                      className="border border-red-100 rounded-xl p-4 bg-red-50"
+                    >
+                      <h4 className="font-semibold mb-2">
+                        {answer.title}
+                      </h4>
+                      <p className="text-sm mb-2">
+                        {answer.content}
+                      </p>
+                      {answer.code && (
+                        <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg text-sm overflow-x-auto">
+                          <code>{answer.code}</code>
+                        </pre>
+                      )}
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
-
+  
           </div>
         </div>
       </div>
-
+  
     </div>
-  )
+  );
+  
 }
 
 export default DetailedQuestion

@@ -80,3 +80,31 @@ export const GetPostsForScrollCURD = async(postsLoaded)=>{
     console.log("Error Occured in the GetPostsForScrollCURD",error)
   }
 }
+
+export const HandleVoteCURD = async (postId, type) => {
+  try {
+    const response = await fetch(
+      `${BackendPath}/questions/vote/${postId}`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type }), // "upvote" | "downvote"
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Vote failed");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in HandleVoteCURD:", error);
+    throw error;
+  }
+};
+
